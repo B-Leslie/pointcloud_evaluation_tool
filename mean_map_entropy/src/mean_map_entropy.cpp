@@ -102,8 +102,17 @@ double computePlaneVariance( pcl::PointCloud< PointT >::Ptr cloud ){
 }
 
 
+void printUsage() {
+        std::cout << "Usage:\n";
+        std::cout << "./mean_map_entropy path/to/pointcloud.pcd [-stepsize int=1] [-radius double=0.3] [-punishSolitaryPoints=0] [-minNeighbors int=15]" << std::endl;
+}
+
 int main( int argc, char** argv ) {
 
+    if (argc == 1 || argc == 2 && (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0 )) {
+        printUsage();
+        return 0;
+    }
 	pcl::PointCloud< PointT >::Ptr inputCloud (new pcl::PointCloud< PointT >);
 	pcl::PointCloud< PointTypeWithEntropy >::Ptr outputCloud (new pcl::PointCloud< PointTypeWithEntropy >);
 
@@ -113,6 +122,12 @@ int main( int argc, char** argv ) {
 
 	// get pointcloud
 	std::vector<int> fileIndices = pcl::console::parse_file_extension_argument (argc, argv, ".pcd");
+    if (fileIndices.size() == 0)
+    {
+        PCL_ERROR ("Couldn't parse command line arguments for PCD file.\n");
+        printUsage();
+        return 0;
+    }
 	if (pcl::io::loadPCDFile< PointT> (argv[fileIndices[0]], *inputCloud) == -1)
 	{
 		PCL_ERROR ("Couldn't read file.\n");
@@ -124,12 +139,12 @@ int main( int argc, char** argv ) {
 	double radius = 0.3;
 	int minNeighbors = 15;
 
-	pcl::console::parse_argument (argc, argv, "-stepsize", stepSize);
-    	pcl::console::parse_argument (argc, argv, "-radius", radius);
-	bool punishSolitaryPoints = pcl::console::find_switch (argc, argv, "-punishSolitaryPoints");
-    	pcl::console::parse_argument (argc, argv, "-minNeighbors", minNeighbors);
+    pcl::console::parse_argument (argc, argv, "-stepsize", stepSize);
+    pcl::console::parse_argument (argc, argv, "-radius", radius);
+    bool punishSolitaryPoints = pcl::console::find_switch (argc, argv, "-punishSolitaryPoints");
+    pcl::console::parse_argument (argc, argv, "-minNeighbors", minNeighbors);
 
-    	std::cout << "Stepsize = " << stepSize << std::endl;
+    std::cout << "Stepsize = " << stepSize << std::endl;
 	std::cout << "Radius for neighborhood search = " << radius << std::endl;
 	if( !punishSolitaryPoints ){
 		std::cout << "Paper version" << std::endl;
@@ -226,7 +241,7 @@ int main( int argc, char** argv ) {
 	std::cout << "Used " << entropyTimer.getTime() << " milliseconds to compute values for " << inputCloud->points.size() << " points." << std::endl;
 
 	int pointsActuallyUsed = (inputCloud->points.size() / stepSize) - lonelyPoints;
-	
+
 	if( punishSolitaryPoints && (pointsActuallyUsed < lonelyPoints) ){
 		std::cout << "Used more solitary than not-solitary points to compute the values. You should consider changing the parameters." << std::endl;
 	}
